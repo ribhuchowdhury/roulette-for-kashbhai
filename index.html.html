@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101326">
+<title>Reflection Roulette</title>
+<style>
+  :root { color-scheme: dark; --bg:#101326; --panel:#191d35; --text:#f7f2e8; --muted:#b7b7cc; --gold:#e8c77a; --lav:#c7b9f4; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; color:var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #292448 0%, var(--bg) 58%); }
+  main { width:min(100%, 560px); text-align:center; }
+  .eyebrow { text-transform:uppercase; letter-spacing:.2em; font-size:.72rem; color:var(--gold); }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-weight:500; font-size:clamp(2.5rem, 8vw, 4.2rem); line-height:1.02; margin:14px 0; }
+  .intro { color:var(--muted); line-height:1.7; max-width:390px; margin:0 auto 28px; }
+  .card { border:1px solid #ffffff20; background:linear-gradient(145deg, #20243e, #171a30); border-radius:24px; padding:clamp(22px, 6vw, 36px); box-shadow:0 24px 80px #0005; }
+  .orbit { width:92px; height:92px; margin:0 auto 22px; border:1px solid #e8c77a80; border-radius:50%; display:grid; place-items:center; position:relative; color:var(--gold); font-size:2rem; }
+  .orbit:before,.orbit:after { content:""; position:absolute; border:1px solid #c7b9f440; border-radius:50%; inset:9px; }
+  .orbit:after { inset:-7px; border-style:dashed; }
+  button { border:0; border-radius:999px; padding:15px 22px; width:100%; cursor:pointer; font-size:1rem; font-weight:650; transition:transform .15s, opacity .15s; }
+  button:hover { transform:translateY(-1px); } button:active { transform:translateY(0); }
+  .primary { color:#171526; background:linear-gradient(100deg, var(--gold), #f4dfaa); margin-top:12px; }
+  .secondary { color:var(--text); background:transparent; border:1px solid #ffffff30; margin-top:10px; }
+  .result { display:none; margin-top:22px; padding:22px 16px; border-radius:18px; background:#0e1124a8; border:1px solid #ffffff12; }
+  .result.show { display:block; }
+  .result-label { color:var(--gold); letter-spacing:.13em; font-size:.7rem; text-transform:uppercase; }
+  .date { font-family:Georgia,serif; font-size:clamp(1.7rem, 6vw, 2.4rem); margin:12px 0 5px; }
+  .time { color:var(--lav); font-size:1.35rem; }
+  .question { line-height:1.7; margin:22px 0 0; font-family:Georgia,serif; font-size:1.1rem; }
+  .foot { color:#999bb5; font-size:.78rem; line-height:1.6; margin:20px auto 0; max-width:410px; }
+  .status { min-height:1.3em; color:var(--lav); font-size:.85rem; margin-top:9px; }
+  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition:none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">A little pact with time</div>
+  <h1>Reflection<br>Roulette</h1>
+  <p class="intro">One thought worth returning to. One random moment in the next 30 days.</p>
+  <section class="card" aria-live="polite">
+    <div class="orbit" aria-hidden="true">✧</div>
+    <p id="prompt">Whenever you're ready, let chance choose the moment.</p>
+    <button class="primary" id="generate">Reveal our moment</button>
+    <div class="result" id="result">
+      <div class="result-label">Your moment has been chosen</div>
+      <div class="date" id="date"></div>
+      <div class="time" id="time"></div>
+      <p class="question">“So, have you figured out which version of yourself you fell in love with?”</p>
+      <button class="secondary" id="copy">Copy the moment</button>
+      <button class="secondary" id="again">Generate another date</button>
+      <div class="status" id="status" role="status"></div>
+    </div>
+  </section>
+  <p class="foot">A gentle nudge, not a deadline. The date is generated only when you tap the button. Times use the local time zone of the device opening this page. This page doesn't send notifications or store your result online.</p>
+</main>
+<script>
+(() => {
+  const DAY = 24 * 60 * 60 * 1000;
+  let chosen = null;
+  const result = document.getElementById('result');
+  const dateEl = document.getElementById('date');
+  const timeEl = document.getElementById('time');
+  const statusEl = document.getElementById('status');
+  const dateFmt = new Intl.DateTimeFormat(undefined, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const timeFmt = new Intl.DateTimeFormat(undefined, { hour:'numeric', minute:'2-digit' });
+
+  function generate() {
+    const now = Date.now();
+    // Random instant between now and 30 days from now.
+    chosen = new Date(now + Math.floor(Math.random() * 30 * DAY));
+    dateEl.textContent = dateFmt.format(chosen);
+    timeEl.textContent = timeFmt.format(chosen);
+    result.classList.add('show');
+    statusEl.textContent = '';
+    document.getElementById('prompt').textContent = 'It has been decided. Keep this moment for the conversation.';
+  }
+  document.getElementById('generate').addEventListener('click', generate);
+  document.getElementById('again').addEventListener('click', generate);
+  document.getElementById('copy').addEventListener('click', async () => {
+    if (!chosen) return;
+    const message = `Our Reflection Roulette moment: ${dateFmt.format(chosen)} at ${timeFmt.format(chosen)} (local time).\n\n“So, have you figured out which version of yourself you fell in love with?”`;
+    try {
+      await navigator.clipboard.writeText(message);
+      statusEl.textContent = 'Copied. Ready to share.';
+    } catch (e) {
+      const area = document.createElement('textarea');
+      area.value = message; area.style.position = 'fixed'; area.style.opacity = '0';
+      document.body.appendChild(area); area.select();
+      const ok = document.execCommand('copy'); area.remove();
+      statusEl.textContent = ok ? 'Copied. Ready to share.' : 'Copy unavailable here — select and copy the date manually.';
+    }
+  });
+})();
+</script>
+</body>
+</html>
